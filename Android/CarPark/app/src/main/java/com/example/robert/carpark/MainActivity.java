@@ -1,7 +1,9 @@
 package com.example.robert.carpark;
 
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.location.Geocoder;
 import android.location.Location;
 import android.support.annotation.NonNull;
@@ -32,6 +34,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import com.example.robert.carpark.Pin;
 
@@ -39,7 +42,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     GoogleMap mGoogleMap;
     GoogleApiClient mGoogleApiClient;
-    List<Pin> Pins;
+    List<Pin> Pins= new ArrayList<>();
+    DatabaseHelper localStorage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,16 +52,44 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Toast.makeText(this, "Perfect!!!", Toast.LENGTH_LONG).show();
             setContentView(R.layout.activity_main);
             initMap();
-            //setMarkers();
+            localStorage = new DatabaseHelper(this);
+            setMarkers();
         } else {
             //No google maps layout
         }
     }
 
-    private void setMarkers() {
-        for (int i = 0; i < Pins.size(); i++) {
-            setMarker(Pins.get(i).Locality, Pins.get(i).Latitude, Pins.get(i).Longitude, Pins.get(i).getAddress());
+    public  void setMarkers() {
+        int c = 0;
+        Cursor res = localStorage.getAllData();
+        if(res.getCount() == 0){
+            showNoDataMessage("Error","Nothing found");
+            return;
         }
+
+        if(res.moveToNext()){
+            Toast.makeText(this, res.toString(), Toast.LENGTH_SHORT).show();
+
+        }
+        /*String cc = String.valueOf(c);
+        Toast.makeText(this,cc , Toast.LENGTH_SHORT).show();
+
+        while(res.moveToNext()) {
+            setMarker(res.getString(5), res.getDouble(2), res.getDouble(1), res.getString(4));
+        }*/
+
+
+//        for (int i = 0; i < Pins.size(); i++) {
+//            setMarker(Pins.get(i).Locality, Pins.get(i).Latitude, Pins.get(i).Longitude, Pins.get(i).getAddress());
+//        }
+    }
+
+    private void showNoDataMessage(String title, String Message) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(true);
+        builder.setTitle(title);
+        builder.setMessage(Message);
+        builder.show();
     }
 
     private void initMap() {
@@ -114,8 +146,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(ll, zoom);
         mGoogleMap.moveCamera(update);
     }
+    //Marker marker;
 
-    Marker marker;
 
     public void geoLocate(View view) throws IOException {
         EditText et = (EditText) findViewById(R.id.editText2);
@@ -139,16 +171,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         pin.setLongitude(lng);
         pin.setOccupied(true);
         pin.setAddress(address.getThoroughfare());
+        //TODO:
+        //if marker exists in list of markers, set colour green
+
         //Pins.add(pin);
+        AddLocal(pin);
+
 
         setMarker(locality, lat, lng, adresa);
 
     }
 
+    private void AddLocal(Pin pin) {
+        boolean isInserted;
+        if (localStorage.insertData(pin)) isInserted = true;
+        else isInserted = false;
+
+        if (isInserted)
+            Toast.makeText(MainActivity.this,"Parking spot remembered",Toast.LENGTH_LONG).show();
+    }
+
     private void setMarker(String locality, double lat, double lng, String adresa) {
-        if(marker != null){
-            marker.remove();
-        }
+//        if(marker != null){
+//            marker.remove();
+//        }
+
+
 
         MarkerOptions options = new MarkerOptions()
                             .title(locality)
@@ -156,7 +204,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             .snippet(adresa)
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
 
-        marker = mGoogleMap.addMarker(options);
+        mGoogleMap.addMarker(options);
     }
 
     @Override

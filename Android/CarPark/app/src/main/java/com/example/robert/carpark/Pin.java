@@ -1,5 +1,6 @@
 package com.example.robert.carpark;
 
+
 /**
  * Created by Robert on 08.12.2017.
  */
@@ -10,6 +11,7 @@ public class Pin {
     Double Latitude;
     Boolean Occupied;
     String Address;
+
 
     public void setAddress(String address) {
         Address = address;
